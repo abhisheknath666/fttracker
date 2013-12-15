@@ -1,8 +1,11 @@
 from django.shortcuts import render
 from django.http import HttpResponse
+from fttrackerapp.models import FoodTruck, Location, Appearance
 
+from datetime import datetime
 import urllib2
 import json
+import time
 
 class Singleton(type):
     """
@@ -33,6 +36,8 @@ class FoodTruckDataFetcher:
             if previously_parsed:
                 break
 
+        return Appearance.objects.all()
+
     def _parse_events(self, response_json):
         """
         For each event, get the associated food trucks
@@ -54,10 +59,41 @@ class FoodTruckDataFetcher:
         response = urllib2.urlopen(request)
         response_json = json.loads(response.read())
         description = response_json["description"]
-        vendor_list = self._get_vendors(description)
         location = response_json["location"]
+        vendor_list = self._get_vendors(description)
+        date_str = response_json["start_time"] # TODO: if end_time-start_time>1 day create new appearance?
+        date_end_index = date_str.find("T") # 2013-12-20T17:00:00-0800
+        if date_end_index==-1:
+            print "Failed to parse event: "+graph_id
+            return False
+        date_str = date_str[:date_end_index-1]
+        try:
+            date = time.strptime(date_str,"%Y-%m-%d")
+            date = datetime.fromtimestamp(time.mktime(date))
+        except ValueError:
+            print "Failed to parse event: "+graph_id
+            return False
         # print "\nLocation: "+location
-        return True
+        return self._make_persistent(location, vendor_list, date)
+
+    def _make_persistent(self, location, vendor_list, date):
+        """
+        Store parsed data in the db
+        """
+        location_obj = None
+        if not location=='':
+            location_obj, created = Location.objects.get_or_create(name=location)
+        for vendor in vendor_list:
+            if vendor=='':
+                continue
+            truck_obj, created = FoodTruck.objects.get_or_create(name=vendor)
+            if not location_obj:
+                continue
+            appearance_obj, created = Appearance.objects.get_or_create(truck=truck_obj,location=location_obj, date=date)
+            if not created:
+                # We've already parsed this event
+                return True
+        return False
 
     def _get_vendors(self, description):
         """
@@ -82,5 +118,6 @@ def index(request):
 
 def poll_for_trucks(request):
     # Use facebook's graph api to poll for trucks here
-    FoodTruckDataFetcher().fetch_latest_data()
-    return HttpResponse("stub")
+    appearances = FoodTruckDataFetcher().fetch_latest_data()
+    context = {'appearances' : appearances}
+    return render(request,'fttracker/summary.html', context)

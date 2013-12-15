@@ -1,0 +1,7 @@
+{% if appearances %}
+    <ul>
+    {% for appearance in appearances %}
+        <li><a href="/appearance/{{ appearance.id }}/">{{ appearance }}</a></li>
+    {% endfor %}
+    </ul>
+{% endif %}
