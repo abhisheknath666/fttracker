@@ -1,7 +1,19 @@
 {% if appearances %}
+    <h3>Food truck appearanes over the last 30days accross all locations</h3>
     <ul>
+    <table>
+    <tr>
+      <th>Food Truck</th>
+      <th>Visits</th>
+    </tr>
+
     {% for appearance in appearances %}
-        <li>{{ appearance.name }} {{ appearance.number_of_appearances }}</li>
+        <tr>
+        <td>{{ appearance.name }}</td>
+        <td>{{ appearance.number_of_appearances }}</td>
+        </tr>
     {% endfor %}
+    </tr>
+    </table>
     </ul>
 {% endif %}
