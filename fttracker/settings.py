@@ -37,7 +37,12 @@ INSTALLED_APPS = (
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'fttrackerapp',
+    'django_cron',
 )
+
+CRON_CLASSES = [
+    'fttrackerapp.cron_jobs.HipChatCronJob',
+]
 
 MIDDLEWARE_CLASSES = (
     'django.contrib.sessions.middleware.SessionMiddleware',

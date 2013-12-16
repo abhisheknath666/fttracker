@@ -52,6 +52,8 @@ class FoodTruckDataFetcher:
         for truck in FoodTruck.objects.all():  # Smaller number of food trucks means it's more performant than using .iterator()
             truck_appearance = {}
             number_of_appearances = filtered_appearances.filter(truck__name=truck.name).count()
+            if number_of_appearances==0:
+                continue
             truck_appearance['number_of_appearances'] = number_of_appearances
             truck_appearance['name'] = truck.name
             truck_appearances.append(truck_appearance)
