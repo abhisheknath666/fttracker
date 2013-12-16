@@ -56,7 +56,7 @@ class FoodTruckDataFetcher:
         self.fetch_latest_data()
         todays_date = datetime.now(GMT8()).date()
         thirty_days_ago = todays_date+timedelta(days=-n)
-        filtered_appearances = Appearance.objects.filter(date__gte=thirty_days_ago)
+        filtered_appearances = Appearance.objects.filter(date__gte=thirty_days_ago, date__lt=todays_date)
         truck_appearances = []
         for truck in FoodTruck.objects.all():  # Smaller number of food trucks means it's more performant than using .iterator()
             truck_appearance = {}
