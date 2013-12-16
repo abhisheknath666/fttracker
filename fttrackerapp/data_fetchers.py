@@ -7,8 +7,14 @@ import json
 import time
 
 class FoodTruckDataFetcher:
+    """
+    Singleton class that fetches and stores
+    food truck data from Facebook's Off The Grid
+    page
+    """
     __metaclass__ = Singleton
     VENDORS_KEY = "\n\nVendors:"
+
     def __init__(self):
         self._access_token = "241089476057257|4ad1161cb5c438fa421944e69fea554a"
 
@@ -18,7 +24,7 @@ class FoodTruckDataFetcher:
         """
         limit = 100 # It's unlikely we'll have more than a 100 events since the last call
         otg_url = "https://graph.facebook.com/OffTheGridSF/events?"+"limit="+str(limit)+"&access_token="+self._access_token
-        # print "\nOTG url: "+otg_url
+
         while True:
             # Loop until we have all the latest
             # data.
@@ -32,8 +38,15 @@ class FoodTruckDataFetcher:
             otg_url = paging_info.get("next")
             if not otg_url:
                 break
+
+    def truck_visits_in_last_n_days(self, n):
+        """
+        Convenience method to fetch the latest data and for each truck count
+        the number of visits in the last 'n' days
+        """
+        self.fetch_latest_data()
         todays_date = date.today()
-        thirty_days_ago = todays_date+timedelta(days=-30)
+        thirty_days_ago = todays_date+timedelta(days=-n)
         filtered_appearances = Appearance.objects.filter(date__gte=thirty_days_ago)
         truck_appearances = []
         for truck in FoodTruck.objects.all():  # Smaller number of food trucks means it's more performant than using .iterator()
@@ -45,6 +58,16 @@ class FoodTruckDataFetcher:
 
         truck_appearances = sorted(truck_appearances, key=lambda appearance: appearance['number_of_appearances'], reverse=True)
         return truck_appearances
+
+    def trucks_at_location(self, location):
+        """
+        Convenience method that returns a list of trucks
+        present at 'location' today
+        """
+        todays_date = date.today()+timedelta(days=4)
+        appearances = Appearance.objects.filter(location__name=location, date=todays_date)
+        truck_set = { appearances.truck.name for appearances in appearances }
+        return truck_set
 
     def _parse_events(self, response_json):
         """
@@ -62,7 +85,6 @@ class FoodTruckDataFetcher:
         Here's where we parse the food trucks and location for the event
         """
         graph_url = "https://graph.facebook.com/"+graph_id+"?access_token="+self._access_token
-        # print "\n ID url: "+graph_url
         request = urllib2.Request(graph_url)
         response = urllib2.urlopen(request)
         response_json = json.loads(response.read())
@@ -74,15 +96,14 @@ class FoodTruckDataFetcher:
         if date_end_index==-1:
             print "Failed to parse event: "+graph_id
             return False
-        date_str = date_str[:date_end_index-1]
+        date_str = date_str[:date_end_index]
         try:
-            date = time.strptime(date_str,"%Y-%m-%d")
-            date = datetime.fromtimestamp(time.mktime(date)) # TODO: make this an aware datetime
+            appearance_datetime = datetime.strptime(date_str,"%Y-%m-%d")
+            appearance_date = appearance_datetime.date()
         except ValueError:
             print "Failed to parse event: "+graph_id
             return False
-        # print "\nLocation: "+location
-        return self._make_persistent(location, vendor_list, date)
+        return self._make_persistent(location, vendor_list, appearance_date)
 
     def _make_persistent(self, location, vendor_list, date):
         """
@@ -91,14 +112,15 @@ class FoodTruckDataFetcher:
         location_obj = None
         if not location=='':
             location_obj, created = Location.objects.get_or_create(name=location)
+        if not location_obj:
+            return
+
         for vendor in vendor_list:
             if vendor=='':
                 continue
-            truck_obj, created = FoodTruck.objects.get_or_create(name=vendor)
-            if not location_obj:
-                continue
-            appearance_obj, created = Appearance.objects.get_or_create(truck=truck_obj,location=location_obj, date=date)
-            if not created:
+            truck_obj, t_created = FoodTruck.objects.get_or_create(name=vendor)
+            appearance_obj, a_created = Appearance.objects.get_or_create(truck=truck_obj,location=location_obj, date=date)
+            if not a_created:
                 # We've already parsed this event
                 return True
         return False
@@ -113,9 +135,7 @@ class FoodTruckDataFetcher:
             return []
         vendors_start_index += len(FoodTruckDataFetcher.VENDORS_KEY)
         vendors_end_index = description.find("\n\n",vendors_start_index);
-        if vendors_end_index != -1:
-            vendors_end_index -= 2
-        else:
+        if vendors_end_index == -1:
             vendors_end_index = len(description)
         vendors_substring = description[vendors_start_index:vendors_end_index]
         vendors_list = vendors_substring.split("\n")

@@ -15,7 +15,7 @@ class Appearance(models.Model):
         return str(self.truck)+" "+str(self.location)+" "+str(self.date)
     truck = models.ForeignKey(FoodTruck)
     location = models.ForeignKey(Location)
-    date = models.DateTimeField('appearance day')
+    date = models.DateField('appearance day')
 
     class Meta:
         unique_together = ("truck", "location", "date")
