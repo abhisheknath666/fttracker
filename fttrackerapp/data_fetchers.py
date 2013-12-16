@@ -75,7 +75,7 @@ class FoodTruckDataFetcher:
         Convenience method that returns a list of trucks
         present at 'location' today
         """
-        todays_date = (datetime.now(GMT8())+timedelta(days=5)).date()
+        todays_date = datetime.now(GMT8()).date()
         appearances = Appearance.objects.filter(location__name=location, date=todays_date)
         truck_set = { appearances.truck.name for appearances in appearances }
         return truck_set
