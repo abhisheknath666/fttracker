@@ -1,18 +1,9 @@
 from django_cron import CronJobBase, Schedule
-from fttrackerapp.data_fetchers import FoodTruckDataFetcher
+from fttrackerapp.data_fetchers import FoodTruckDataFetcher, GMT8
 from datetime import datetime,date,timedelta,tzinfo
 from fttrackerapp.singleton import Singleton
 
 import urllib2,urllib
-
-class GMT8(tzinfo):
-    __metaclass__=Singleton
-    def utcoffset(self,dt):
-        return timedelta(hours=-8)
-    def tzname(self,dt):
-        return "GMT -8"
-    def dst(self, dt):
-        return timedelta(0)
 
 class HipChatCronJob(CronJobBase):
     """
@@ -37,11 +28,13 @@ class HipChatCronJob(CronJobBase):
         location = "410 Minna St, San Francisco CA"
         if day_of_week==2 or day_of_week==4 or day_of_week==6:
             truck_set = FoodTruckDataFetcher().trucks_at_location(location)
-            message = "Today at "+location+" we have: "+str(truck_set)
+            message = "Today at "+location+" we have: "
+            for truck in truck_set:
+                message = message + truck + ". "
             params = urllib.urlencode({'message' : message,
                                         'auth_token' : self._api_key,
                                         'room_id' : self._room_id,
-                                        'from' : "FTTracker" })                                        
+                                        'from' : "FTTracker" })
             message_url = "https://api.hipchat.com/v1/rooms/message?"+params
             request = urllib2.Request(message_url)
             response = urllib2.urlopen(request)

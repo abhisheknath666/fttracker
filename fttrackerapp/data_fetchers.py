@@ -1,10 +1,19 @@
 from fttrackerapp.models import FoodTruck, Location, Appearance
 from fttrackerapp.singleton import Singleton
 
-from datetime import datetime,date,timedelta
+from datetime import datetime,date,timedelta,tzinfo
 import urllib2
 import json
 import time
+
+class GMT8(tzinfo):
+    __metaclass__=Singleton
+    def utcoffset(self,dt):
+        return timedelta(hours=-8)
+    def tzname(self,dt):
+        return "GMT -8"
+    def dst(self, dt):
+        return timedelta(0)
 
 class FoodTruckDataFetcher:
     """
@@ -45,7 +54,7 @@ class FoodTruckDataFetcher:
         the number of visits in the last 'n' days
         """
         self.fetch_latest_data()
-        todays_date = date.today()
+        todays_date = datetime.now(GMT8()).date()
         thirty_days_ago = todays_date+timedelta(days=-n)
         filtered_appearances = Appearance.objects.filter(date__gte=thirty_days_ago)
         truck_appearances = []
@@ -66,7 +75,7 @@ class FoodTruckDataFetcher:
         Convenience method that returns a list of trucks
         present at 'location' today
         """
-        todays_date = date.today()+timedelta(days=4)
+        todays_date = (datetime.now(GMT8())+timedelta(days=5)).date()
         appearances = Appearance.objects.filter(location__name=location, date=todays_date)
         truck_set = { appearances.truck.name for appearances in appearances }
         return truck_set
