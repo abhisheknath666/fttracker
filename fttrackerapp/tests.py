@@ -1,6 +1,7 @@
 from django.test import TestCase
 from fttrackerapp.data_fetchers import FoodTruckDataFetcher
 from django.test import TestCase
+from django.http import HttpResponse
 
 from fttrackerapp.models import FoodTruck, Location, Appearance
 from datetime import date
@@ -8,7 +9,9 @@ import json
 
 class FoodTruckDataFetcherTests(TestCase):
     def setUp(self):
-        pass
+        ftobj, created = FoodTruck.objects.get_or_create(name="KoJa")
+        locobj, created = Location.objects.get_or_create(name="410 Minna St, San Francisco CA")
+        Appearance.objects.get_or_create(location=locobj,truck=ftobj,date=date.today())
 
     def test_single_event_parser(self):
         """
@@ -32,3 +35,19 @@ class FoodTruckDataFetcherTests(TestCase):
 
         # Test date
         self.assertEqual(appearance_date,date(2013,12,20), "Failed to parse date")
+
+    def test_truck_visits_in_last_n_days(self):
+        """
+        Test the poll
+        """
+        for i in range(10):
+            response = self.client.get('/pollfortrucks/')
+            self.assertEqual(response.status_code, 200)
+
+    def test_trucks_at_location(self):
+        """
+        Test the trucks at location api
+        """
+        for i in range(10):
+            response = self.client.get('/trucksatlocation/?location=410%20Minna%20St,%20San%20Francisco%20CA')
+            self.assertContains(response,"KoJa",1,200)
