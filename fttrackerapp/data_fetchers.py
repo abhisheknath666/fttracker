@@ -40,7 +40,7 @@ class FoodTruckDataFetcher:
             request = urllib2.Request(otg_url)
             response = urllib2.urlopen(request)
             response_json = json.loads(response.read()) # loads doesn't raise excpetions
-            previously_parsed = self._parse_events(response_json)
+            previously_parsed = self.__parse_events(response_json)
             if previously_parsed:
                 break
             paging_info = response_json.get("paging")
@@ -80,18 +80,18 @@ class FoodTruckDataFetcher:
         truck_set = { appearances.truck.name for appearances in appearances }
         return truck_set
 
-    def _parse_events(self, response_json):
+    def __parse_events(self, response_json):
         """
         For each event, get the associated food trucks
         """
         events = response_json.get("data")
         for event in events:
             id = event.get("id")
-            previously_parsed = self._parse_event(id)
+            previously_parsed = self.__parse_event(id)
             if previously_parsed:
                 return True
 
-    def _parse_event(self, graph_id):
+    def __parse_event(self, graph_id):
         """
         Here's where we parse the food trucks and location for the event
         """
@@ -99,9 +99,16 @@ class FoodTruckDataFetcher:
         request = urllib2.Request(graph_url)
         response = urllib2.urlopen(request)
         response_json = json.loads(response.read())
+        location, vendor_list, appearance_date = self.__parse_event_json(response_json)
+        return self.__make_persistent(location, vendor_list, appearance_date)
+
+    def __parse_event_json(self, response_json):
+        """
+        Parse out the relavent details from the json
+        """
         description = response_json.get("description")
         location = response_json.get("location")
-        vendor_list = self._get_vendors(description)
+        vendor_list = self.__get_vendors(description)
         date_str = response_json.get("start_time") # TODO: if end_time-start_time>1 day create new appearance?
         date_end_index = date_str.find("T") # 2013-12-20T17:00:00-0800
         if date_end_index==-1:
@@ -114,9 +121,9 @@ class FoodTruckDataFetcher:
         except ValueError:
             print "Failed to parse event: "+graph_id
             return False
-        return self._make_persistent(location, vendor_list, appearance_date)
+        return location, vendor_list, appearance_date
 
-    def _make_persistent(self, location, vendor_list, date):
+    def __make_persistent(self, location, vendor_list, date):
         """
         Store parsed data in the db
         """
@@ -136,7 +143,7 @@ class FoodTruckDataFetcher:
                 return True
         return False
 
-    def _get_vendors(self, description):
+    def __get_vendors(self, description):
         """
         Parse the vendors out of the description string
         """
