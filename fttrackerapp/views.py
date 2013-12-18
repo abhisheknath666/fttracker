@@ -27,7 +27,7 @@ def trucks_at_location(request):
     location = request.GET.get('location')
     date_str = request.GET.get('date')
     appearance_date = date.today()
-    if len(date_str)>0:
+    if date_str is not None:
         appearance_datetime = datetime.strptime(date_str,"%Y-%m-%d")
         appearance_date = appearance_datetime.date()
     truck_set = FoodTruckDataFetcher().trucks_at_location(location, appearance_date)
