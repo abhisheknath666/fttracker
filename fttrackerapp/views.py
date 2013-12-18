@@ -26,11 +26,12 @@ def trucks_at_location(request):
     """
     location = request.GET.get('location')
     date_str = request.GET.get('date')
-    appearance_date = date.today()
     if date_str is not None:
         appearance_datetime = datetime.strptime(date_str,"%Y-%m-%d")
         appearance_date = appearance_datetime.date()
-    truck_set = FoodTruckDataFetcher().trucks_at_location(location, appearance_date)
+        truck_set = FoodTruckDataFetcher().trucks_at_location(location, appearance_date)
+    else:
+        truck_set = FoodTruckDataFetcher().trucks_at_location(location)
     message = "Today at "+location+" we have: "
     for truck in truck_set:
         message = message + truck + ". "
