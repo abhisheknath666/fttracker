@@ -2,6 +2,7 @@ from django.shortcuts import render
 from django.http import HttpResponse
 
 from fttrackerapp.data_fetchers import FoodTruckDataFetcher
+from datetime import datetime,date,timedelta,tzinfo
 
 def index(request):
     message = """<h3>Welcome to Food Truck Tracker!</h3><p>We aggregate food truck visits around San Francisco's financial district.<br /><br /><a href="/pollfortrucks/">Click here</a> for a list of trucks participating in 'Off The Grid' over the last 30 days.</p>"""
@@ -24,5 +25,14 @@ def trucks_at_location(request):
     currently at the specified location
     """
     location = request.GET.get('location')
-    truck_set = FoodTruckDataFetcher().trucks_at_location(location)
-    return HttpResponse(str(truck_set))
+    date_str = request.GET.get('date')
+    appearance_date = date.today()
+    if date:
+        appearance_datetime = datetime.strptime(date_str,"%Y-%m-%d")
+        appearance_date = appearance_datetime.date()
+    truck_set = FoodTruckDataFetcher().trucks_at_location(location, appearance_date)
+    message = "Today at "+location+" we have: "
+    for truck in truck_set:
+        message = message + truck + ". "
+
+    return HttpResponse(message)

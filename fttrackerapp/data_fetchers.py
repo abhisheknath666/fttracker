@@ -70,13 +70,12 @@ class FoodTruckDataFetcher:
         truck_appearances = sorted(truck_appearances, key=lambda appearance: appearance['number_of_appearances'], reverse=True)
         return truck_appearances
 
-    def trucks_at_location(self, location):
+    def trucks_at_location(self, location, appearance_date=datetime.now(GMT8()).date()):
         """
         Convenience method that returns a list of trucks
         present at 'location' today
         """
-        todays_date = datetime.now(GMT8()).date()
-        appearances = Appearance.objects.filter(location__name=location, date=todays_date)
+        appearances = Appearance.objects.filter(location__name=location, date=appearance_date)
         truck_set = { appearances.truck.name for appearances in appearances }
         return truck_set
 

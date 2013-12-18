@@ -28,6 +28,8 @@ class HipChatCronJob(CronJobBase):
         location = "410 Minna St, San Francisco CA"
         if day_of_week==2 or day_of_week==4 or day_of_week==6:
             truck_set = FoodTruckDataFetcher().trucks_at_location(location)
+            if len(truck_set)==0:
+                location = "Off the Grid"
             message = "Today at "+location+" we have: "
             for truck in truck_set:
                 message = message + truck + ". "
